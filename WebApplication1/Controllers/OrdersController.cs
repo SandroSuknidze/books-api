@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Models;
 using WebApplication1.Packages;
 
@@ -8,9 +9,10 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdersController(IPKG_ORDERS pKG_ORDERS) : ControllerBase
+    public class OrdersController(IPKG_ORDERS pKG_ORDERS, IPKG_CART pKG_CART) : ControllerBase
     {
         readonly IPKG_ORDERS orders_package = pKG_ORDERS;
+        readonly IPKG_CART cart_package = pKG_CART;
 
         [HttpGet]
         public ActionResult<List<Order>> Get()
@@ -40,26 +42,31 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost]
-        public ActionResult Post(Order order)
+        public ActionResult Post([FromBody] List<Order> orders)
         {
-            if (order == null)
+            if (orders == null || !orders.Any())
             {
                 return BadRequest("Order info required");
             }
-            else
+
+            try
             {
-                try
+                foreach (var order in orders)
                 {
                     orders_package.CreateOrder(order);
-                    return Created();
+                }
 
-                }
-                catch (Exception ex)
-                {
-                    return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred: " + ex.Message);
-                }
+                cart_package.EmptyCart();
+
+                return CreatedAtAction(nameof(Post), new { count = orders.Count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred: " + ex.Message);
             }
         }
+
+
 
 
 

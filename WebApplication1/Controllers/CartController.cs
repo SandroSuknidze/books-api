@@ -129,5 +129,19 @@ namespace WebApplication1.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred: " + ex.Message);
             }
         }
+
+        [HttpGet("with-books")]
+        public ActionResult<List<CartWithBook>> GetCartItemsWithBooks()
+        {
+            try
+            {
+                List<CartWithBook> cartWithBooks = carts_package.GetCartItemsWithBooks();
+                return Ok(cartWithBooks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred: " + ex.Message);
+            }
+        }
     }
 }

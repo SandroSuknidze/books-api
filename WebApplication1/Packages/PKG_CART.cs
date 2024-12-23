@@ -12,6 +12,9 @@ namespace WebApplication1.Packages
         public void CreateCartItem(Cart cart);
         public void UpdateCartItem(Cart cart);
         public Cart GetCartItemByBookId(int bookId);
+        public List<CartWithBook> GetCartItemsWithBooks();
+        public void EmptyCart();
+
     }
 
     public class PKG_CART : PKG_BASE, IPKG_CART
@@ -193,5 +196,63 @@ namespace WebApplication1.Packages
 
             return cart;
         }
+
+        public List<CartWithBook> GetCartItemsWithBooks()
+        {
+            List<CartWithBook> cartWithBooks = new();
+            using OracleConnection conn = new(ConnStr);
+            conn.Open();
+
+            using OracleCommand cmd = new()
+            {
+                Connection = conn,
+                CommandText = "olerning.PKG_SANDRO_CART.get_cart_items_with_books",
+                CommandType = CommandType.StoredProcedure,
+            };
+
+            cmd.Parameters.Add("p_result", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataReader reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                CartWithBook cartWithBook = new()
+                {
+                    BookId = reader.GetInt32(reader.GetOrdinal("book_id")),
+                    Title = reader.GetString(reader.GetOrdinal("title")),
+                    Author = reader.GetString(reader.GetOrdinal("author")),
+                    Price = reader.GetDecimal(reader.GetOrdinal("price")),
+                    StockQuantity = reader.GetInt32(reader.GetOrdinal("stock_quantity")),
+                    CartQuantity = reader.GetInt32(reader.GetOrdinal("cart_quantity")),
+                };
+
+                cartWithBooks.Add(cartWithBook);
+            }
+
+            return cartWithBooks;
+        }
+
+        public void EmptyCart()
+        {
+            using OracleConnection conn = new(ConnStr);
+            conn.Open();
+
+            using OracleCommand cmd = new();
+            cmd.Connection = conn;
+            cmd.CommandText = "olerning.PKG_SANDRO_CART.empty_cart";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (OracleException ex)
+            {
+                throw new Exception("An error occurred while deleting the cart items: " + ex.Message);
+            }
+        }
+
+
+
     }
 }
